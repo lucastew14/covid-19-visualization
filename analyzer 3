@@ -1,0 +1,230 @@
+/**
+ * this program stores the values for
+ * each statistic for the pie chart
+ *
+ * @author Lucas Tewolde
+ * @version 12-11-2021
+ */
+public class State
+{
+  
+    private String sName;
+    private int sCases;
+    private int sDeaths;
+
+    public State(String name, int cases, int deaths)
+      /**
+* Constructor for State object
+*
+* @param name
+* @param deaths
+* @param cases
+* 
+*/
+    {
+        sName = name;
+        sDeaths = deaths;
+        sCases = cases;
+    }
+  
+/**
+* retrieve method for state name
+* @return state name
+*/
+    public String getName()
+    {
+        return sName;
+    }
+  
+/**
+* retrieve method for state cases
+* @return number of cases
+*/
+    public int getCases()
+    {
+        return sCases;
+    }
+  
+/**
+* retrieve method for state deaths
+* @return number of deaths
+*/
+    public int getDeaths()
+    {
+        return sDeaths;
+    }
+ 
+}
+
+
+
+
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.File;
+/**
+ * this program reads and evaluates
+ * the data for the pie chart
+ *
+ * @author Lucas Tewolde
+ * @version 12-11-2021
+ */
+public class DataReader
+{
+  
+    private ArrayList<State> states;
+    private File input;
+  
+/**
+* Constructor for the DataReader object
+* @param fName File Name
+*/
+    public DataReader(String fName)
+    {
+        states = new ArrayList<State>();
+        input = new File(fName);
+    }
+/**
+* Reads input file for three columns
+* (state name, number of cases, number of deaths) and stores
+* data in State objects
+*
+* @return State objects
+* @throws IOException when Input file is wrongly formatted
+* 
+*/
+
+    public ArrayList<State> readData() throws IOException
+    {
+        BufferedReader in = new BufferedReader(new FileReader(input));
+        String line = "";
+        while ((line = in.readLine()) != null)
+        {   if(line.length() > 0)
+            {
+                String[] columns = line.split(",");
+                String nm = columns[0];
+                int cas = Integer.parseInt(columns[1]);
+                int death = Integer.parseInt(columns[2]);
+                State temp = new State(nm, cas, death);
+                states.add(temp);
+            }
+        }
+        in.close();
+        return states;
+    }
+
+}
+
+
+
+
+
+
+
+import java.util.ArrayList;
+import javafx.application.Application;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.Group;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
+import javafx.scene.shape.Circle;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+/**
+ * this program sets up the pie chart and
+ * assigns specific statics to each one
+ * of them
+ *
+ * @author Lucas Tewolde
+ * @version 12-11-2021
+ */
+public class ChartWindow extends Application
+{
+    private ArrayList<State> stateGroup;
+    /**
+     * assigning values for variables
+     */
+    private DataReader ref;
+    private final static double RADIUS = 2000;
+    private final static int HORZ = 25;
+    private final static int VERT = 25;
+  
+    public Group drawState(State state)
+    /**
+* Draws a circle, arc and text statements for the object
+*
+* @param state
+* @return a group of visualization texts for state
+* 
+*/
+    {
+        double inTemp;
+        double deaTemp;
+        double infectionRate;
+        double deathRate;
+        double totInfect = 0;
+        for (State s: stateGroup)
+        {
+            totInfect += s.getCases();
+        }
+        inTemp = state.getCases();
+        deaTemp = state.getDeaths();
+        infectionRate = inTemp / totInfect;
+        deathRate = deaTemp / inTemp;
+        Circle rep = new Circle(infectionRate * RADIUS, Color.BLUE);
+        String output = String.format("%s: %.1f%%\n%s: %.1f%%\n%s",
+            "Infection Rate", infectionRate * 100, "Death Rate",
+            deathRate * 100, state.getCases());
+        Tooltip t = new Tooltip(output);
+        Tooltip.install(rep, t);
+        Arc arc = new Arc(0, 0, rep.getRadius(), rep.getRadius(), 0,
+            deathRate * 360);
+        arc.setType(ArcType.ROUND);
+        arc.setFill(Color.RED);
+        arc.toFront();
+        Text text = new Text(state.getName());
+        text.setX(0 - (state.getName().length() * 4));
+        text.setY(15 + (infectionRate * RADIUS));
+        text.setFont(Font.font("Verdana", FontWeight.BOLD, 15));
+        Group group = new Group(rep, text, arc);
+        return group;
+    }
+    @Override
+public void start(Stage primaryStage) throws Exception {
+        ref = new DataReader("data_11_09.csv");
+        stateGroup = ref.readData();
+        FlowPane flow = new FlowPane();
+        flow.setHgap(HORZ);
+        flow.setVgap(VERT);
+        ObservableList<Node> list = flow.getChildren();
+        for (State s: stateGroup)
+        {
+            list.addAll(drawState(s));
+        }
+        ScrollPane scroll = new ScrollPane();
+        scroll.setContent(flow);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        Scene scene = new Scene(scroll, 300, 250);
+        primaryStage.setScene(scene);
+        primaryStage.getScene();
+        primaryStage.setFullScreen(true);
+        primaryStage.setTitle("COVID-19 Visualization");
+        primaryStage.show();   
+    }
+
+    public static void main(String[] args) throws IOException {
+        Application.launch(args);
+    }
+
+}
